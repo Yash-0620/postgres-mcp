@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  # 1. The Vulnerable Target (Strictly Isolated via SSE)
+  postgres-mcp:
+    image: crystaldba/postgres-mcp:latest 
+    command: ["--access-mode=unrestricted", "--transport=sse", "--sse-port=8099"]
+    environment:
+      # The enterprise developer will pass their actual DB credentials here
+      - DATABASE_URI=${DATABASE_URI:-postgresql://postgres:password@host:5432/db}
+    networks:
+      - aegis_secure_net
+
+  # 2. The Aegis Edge Shield (Publicly Exposed)
+  aegis-sidecar:
+    image: aegisprotocol/mcp-sidecar:latest
+    ports:
+      - "8080:8080"
+    environment:
+      - TARGET_MCP_URL=http://postgres-mcp:8099 
+      # CRITICAL: Ensure you paste the Ed25519 Public Key you generated earlier
+      - AEGIS_PUBLIC_KEY=-----BEGIN PUBLIC KEY-----
+MCowBQYDK2VwAyEAjW1Lg7SRz2/K8ASyRhk9svTaJj7rtpTudllj7vCUIHU=
+-----END PUBLIC KEY-----
+    networks:
+      - aegis_secure_net
+    depends_on:
+      - postgres-mcp
+
+networks:
+  aegis_secure_net:
+    driver: bridge

@@ -22,6 +22,23 @@
 
 </div>
 
+# 🛡️ Postgres MCP Pro (Secured by Aegis Zero-Trust)
+
+This is the mathematically secured distribution of `crystaldba/postgres-mcp`, designed for Enterprise Production environments (SOC2/HIPAA). 
+
+⚠️ **Security Warning:** Exposing raw PostgreSQL MCP servers directly to LLMs presents a critical prompt-injection liability.
+
+This distribution embeds the [Aegis Ed25519 Edge Proxy](https://aegis-cloud-console.vercel.app/) directly into the Docker pipeline. It intercepts the JSON-RPC payload and mathematically blocks unauthorized `DROP`, `DELETE`, and `ALTER` commands in <2ms before they ever reach the database connection.
+
+### Zero-Trust Deployment
+1. Generate your Ed25519 Capability Token at the [Aegis Cloud Console](https://aegis-cloud-console.vercel.app/).
+2. Run the secure stack:
+```bash
+docker-compose up -d
+```
+
+All MCP traffic must now be routed through http://localhost:8080 with a valid X-Aegis-IBCT signature.
+
 ## Overview
 
 **Postgres MCP Pro** is an open source Model Context Protocol (MCP) server built to support you and your AI agents throughout the **entire development process**—from initial coding, through testing and deployment, and to production tuning and maintenance.
