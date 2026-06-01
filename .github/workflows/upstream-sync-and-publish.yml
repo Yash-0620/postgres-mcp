@@ -1,0 +1,52 @@
+name: Aegis Upstream Sync & Registry Publish
+
+on:
+  schedule:
+    # Run automatically every Sunday at midnight (UTC)
+    - cron: '0 0 * * 0'
+  workflow_dispatch: # Allows manual trigger from the GitHub Actions tab
+
+# CRITICAL: We need id-token: write so the MCP Publisher can use OIDC to authenticate
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  sync-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Aegis Fork
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure Git Identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Sync Upstream (CrystalDBA)
+        run: |
+          git remote add upstream https://github.com/crystaldba/postgres-mcp.git
+          git fetch upstream
+          # Merge upstream main, always prioritizing our Aegis files (README, docker-compose, server.json) on conflict
+          git merge upstream/main -X ours --allow-unrelated-histories -m "chore: automated upstream sync from CrystalDBA"
+          git push origin main
+
+      - name: Setup Go Environment
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.x'
+
+      - name: Install MCP Publisher CLI
+        run: |
+          git clone https://github.com/modelcontextprotocol/registry.git /tmp/registry
+          cd /tmp/registry
+          make publisher
+          mv bin/mcp-publisher /usr/local/bin/
+
+      - name: Publish to Global Registry via OIDC
+        run: |
+          # The CLI will natively detect the GitHub Actions environment and use OIDC
+          mcp-publisher login github-actions
+          mcp-publisher publish --server-url https://github.com/Yash-0620/postgres-mcp

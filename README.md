@@ -41,6 +41,8 @@ All MCP traffic must now be routed through http://localhost:8080 with a valid X-
 
 ## Overview
 
+> **⚖️ Open-Source Attribution:** This repository is an independent, mathematically hardened distribution of the official [CrystalDBA Postgres MCP Server](https://github.com/crystaldba/postgres-mcp). It is maintained by the Aegis Security Protocol team to provide a SOC2/HIPAA-compliant deployment pathway for enterprise environments.
+
 **Postgres MCP Pro** is an open source Model Context Protocol (MCP) server built to support you and your AI agents throughout the **entire development process**—from initial coding, through testing and deployment, and to production tuning and maintenance.
 
 Postgres MCP Pro does much more than wrap a database connection.

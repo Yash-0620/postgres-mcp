@@ -1,6 +1,12 @@
 {
-  "$schema": "https://registry.modelcontextprotocol.io/schema.json",
-  "version": "1.0.0",
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "version": "1.0.2",
   "name": "io.github.Yash-0620/postgres-mcp-secured",
-  "description": "Enterprise PostgreSQL MCP secured by Aegis Zero-Trust to block unauthorized SQL injections."
+  "title": "Postgres Secured (Aegis Zero-Trust)",
+  "description": "An Aegis-Hardened distribution of the CrystalDBA Postgres MCP Server. Blocks unauthorized SQL injections via Ed25519 edge verification.",
+  "websiteUrl": "https://aegis-cloud-console.vercel.app/",
+  "repository": {
+    "url": "https://github.com/Yash-0620/postgres-mcp",
+    "source": "github"
+  }
 }
