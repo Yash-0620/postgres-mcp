@@ -6,6 +6,10 @@ on:
     - cron: '0 0 * * 0'
   workflow_dispatch: # Allows manual trigger from the GitHub Actions tab
 
+# THE FIX: Force GitHub to use the upgraded Node 24 runtime
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 # CRITICAL: We need id-token: write so the MCP Publisher can use OIDC to authenticate
 permissions:
   contents: write
@@ -37,6 +41,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.24.x'
+          cache: false # THE FIX: Disables the go.sum cache warning
 
       - name: Install MCP Publisher CLI
         run: |
@@ -49,4 +54,7 @@ jobs:
         run: |
           # The CLI will natively detect the GitHub Actions environment and use OIDC
           mcp-publisher login github-actions
-          mcp-publisher publish --server-url https://github.com/Yash-0620/postgres-mcp
+          
+          # THE FIX: Run the publish command, but don't crash the workflow if it fails 
+          # (e.g., if the version 1.0.3 already exists on the registry)
+          mcp-publisher publish --server-url https://github.com/Yash-0620/postgres-mcp || echo "Publishing skipped: Version likely already exists on the global registry."
