@@ -45,21 +45,25 @@ jobs:
           make publisher
           mv bin/mcp-publisher /usr/local/bin/
 
-      - name: CLI Telemetry & Reconnaissance
+      - name: Sync Upstream (CrystalDBA)
         run: |
+          # Enforce strict error handling. If a merge actually fails, the pipeline MUST crash.
           set -euo pipefail
-          
-          echo "=== INITIATING CLI RECONNAISSANCE ==="
-          echo "Dumping CLI version:"
-          mcp-publisher --version || echo "Version flag not supported"
-          
-          echo "-----------------------------------"
-          echo "Dumping available login methods:"
-          mcp-publisher login --help || echo "Help flag not supported for login"
-          echo "==================================="
-          
-          echo "Telemetry gathered successfully. Halting pipeline to prevent unauthenticated publish crash."
-          
-          # We exit 0 (success) here so the pipeline turns green, 
-          # allowing us to easily read the logs without a false-positive failure alert.
-          exit 0
+
+          # Ensure the runner is explicitly attached to the main branch 
+          # (bypassing GitHub Actions' detached HEAD state)
+          git checkout main
+
+          # Map and fetch the original creator's repository
+          git remote add upstream https://github.com/crystaldba/postgres-mcp.git
+          git fetch upstream main
+
+          # Merge the upstream updates into our fork. 
+          # -X ours guarantees that our trapdoor files (server.json, docker-compose.yml) 
+          # will absolutely overwrite any conflicting files from the upstream creators.
+          git merge upstream/main -X ours --allow-unrelated-histories -m "chore: automated upstream sync maintaining Aegis infrastructure"
+
+          # Push the synchronized code to our fork. 
+          # --force-with-lease safely forces the push through any minor CI history bubbles 
+          # without blindly overwriting commits you might have pushed manually.
+          git push --force-with-lease origin main
