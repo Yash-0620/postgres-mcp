@@ -25,13 +25,32 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Sync Upstream (CrystalDBA)
+      - name: Master Sync Upstream (CrystalDBA)
         run: |
-          git remote add upstream https://github.com/crystaldba/postgres-mcp.git
-          git fetch upstream
-          # Merge upstream main, always prioritizing our Aegis files (README, docker-compose, server.json) on conflict
-          git merge upstream/main -X ours --allow-unrelated-histories -m "chore: automated upstream sync from CrystalDBA"
-          git push origin main
+          set -euo pipefail
+
+          UPSTREAM_URL="https://github.com/crystaldba/postgres-mcp.git"
+
+          # 1. Idempotent Remote Check (Fixes the current crash)
+          if git remote get-url upstream >/dev/null 2>&1; then
+            git remote set-url upstream "$UPSTREAM_URL"
+          else
+            git remote add upstream "$UPSTREAM_URL"
+          fi
+
+          # 2. Fetch all upstream data, including new release tags
+          git fetch upstream --tags
+
+          # 3. Align the CI Runner with our remote timeline
+          git fetch origin main
+          git checkout -B main origin/main
+
+          # 4. Enforce the Aegis Architecture (-X ours)
+          git merge upstream/main -X ours --allow-unrelated-histories -m "chore: automated upstream sync maintaining Aegis infrastructure"
+
+          # 5. Sledgehammer Push
+          git push --force origin main
+          git push --tags origin
 
       - name: Setup Go Environment
         uses: actions/setup-go@v5
@@ -45,26 +64,18 @@ jobs:
           make publisher
           mv bin/mcp-publisher /usr/local/bin/
 
-      - name: Sync Upstream (CrystalDBA)
+      - name: CLI Telemetry & Reconnaissance
         run: |
-          # Enforce strict error handling
           set -euo pipefail
-
-          # Map the upstream repository and pull everything, including their new release tags
-          git remote add upstream https://github.com/crystaldba/postgres-mcp.git
-          git fetch upstream --tags
-
-          # Force the runner to track our remote main exactly
-          git fetch origin main
-          git checkout -B main origin/main
-
-          # Merge the upstream updates. 
-          # -X ours ensures our proxy files (server.json, docker-compose.yml) destroy their defaults.
-          git merge upstream/main -X ours --allow-unrelated-histories -m "chore: automated upstream sync maintaining Aegis infrastructure"
-
-          # SLEDGEHAMMER PUSH: We dictate the state of the repository.
-          # This blasts through the non-fast-forward error and enforces our merged timeline.
-          git push --force origin main
-
-          # Push the synchronized tags so our GitHub releases perfectly mirror the upstream
-          git push --tags origin
+          
+          echo "=== INITIATING CLI RECONNAISSANCE ==="
+          echo "Dumping CLI version:"
+          mcp-publisher --version || echo "Version flag not supported"
+          
+          echo "-----------------------------------"
+          echo "Dumping available login methods:"
+          mcp-publisher login --help || echo "Help flag not supported for login"
+          echo "==================================="
+          
+          echo "Telemetry gathered successfully. Halting pipeline to prevent unauthenticated publish crash."
+          exit 0
