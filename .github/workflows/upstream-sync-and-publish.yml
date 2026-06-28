@@ -47,25 +47,24 @@ jobs:
 
       - name: Sync Upstream (CrystalDBA)
         run: |
-          # Enforce strict error handling to catch fatal merge conflicts immediately
+          # Enforce strict error handling
           set -euo pipefail
 
-          # Map the upstream repository
+          # Map the upstream repository and pull everything, including their new release tags
           git remote add upstream https://github.com/crystaldba/postgres-mcp.git
+          git fetch upstream --tags
 
-          # Fetch the absolute latest state of our remote fork
+          # Force the runner to track our remote main exactly
           git fetch origin main
-
-          # CRITICAL FIX: Force the runner to explicitly attach to and track origin/main
-          # This aligns the CI runner's timeline with the remote and clears the non-fast-forward error
           git checkout -B main origin/main
 
-          # Fetch the latest updates from the upstream creators
-          git fetch upstream
-
-          # Merge the upstream updates into our fork. 
-          # -X ours ensures our weaponized files (server.json, docker-compose.yml) overwrite their defaults.
+          # Merge the upstream updates. 
+          # -X ours ensures our proxy files (server.json, docker-compose.yml) destroy their defaults.
           git merge upstream/main -X ours --allow-unrelated-histories -m "chore: automated upstream sync maintaining Aegis infrastructure"
 
-          # Push the synchronized code to our fork safely.
-          git push --force-with-lease origin main
+          # SLEDGEHAMMER PUSH: We dictate the state of the repository.
+          # This blasts through the non-fast-forward error and enforces our merged timeline.
+          git push --force origin main
+
+          # Push the synchronized tags so our GitHub releases perfectly mirror the upstream
+          git push --tags origin
