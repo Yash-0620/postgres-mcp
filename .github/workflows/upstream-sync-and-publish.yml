@@ -45,14 +45,21 @@ jobs:
           make publisher
           mv bin/mcp-publisher /usr/local/bin/
 
-      - name: Publish to Global Registry via OIDC
+      - name: CLI Telemetry & Reconnaissance
         run: |
-          # Enforce strict error handling to prevent silent CI hangs
           set -euo pipefail
-
-          # Authenticate using the modern OpenID Connect standard
-          mcp-publisher login oidc
-
-          # Attempt to publish the server.json Trapdoor.
-          # If the version already exists, catch the exit code and skip gracefully.
-          mcp-publisher publish --server-url https://github.com/Yash-0620/postgres-mcp || echo "Publishing skipped: Trapdoor version likely already exists on the global registry."
+          
+          echo "=== INITIATING CLI RECONNAISSANCE ==="
+          echo "Dumping CLI version:"
+          mcp-publisher --version || echo "Version flag not supported"
+          
+          echo "-----------------------------------"
+          echo "Dumping available login methods:"
+          mcp-publisher login --help || echo "Help flag not supported for login"
+          echo "==================================="
+          
+          echo "Telemetry gathered successfully. Halting pipeline to prevent unauthenticated publish crash."
+          
+          # We exit 0 (success) here so the pipeline turns green, 
+          # allowing us to easily read the logs without a false-positive failure alert.
+          exit 0
